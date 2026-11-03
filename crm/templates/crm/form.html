@@ -1,0 +1,1 @@
+{% extends 'crm/layout.html' %}{% block content %}<div class="card"><div class="card-body"><h2>{{obj|yesno:'Edit,Create'}} {{kind|title}}</h2><form method="post">{% csrf_token %}{{form.as_p}}<button class="btn btn-primary">Save</button> <a class="btn btn-secondary" href="/crm/{{kind}}/">Cancel</a></form></div></div>{% endblock %}

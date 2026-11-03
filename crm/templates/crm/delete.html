@@ -1,0 +1,1 @@
+{% extends 'crm/layout.html' %}{% block content %}<div class="card p-4"><h3>Delete {{obj}}?</h3><p>This action cannot be undone.</p><form method="post" onsubmit="return confirm('Delete this record permanently?')">{% csrf_token %}<button class="btn btn-danger">Confirm delete</button> <a href="/crm/{{kind}}/" class="btn btn-secondary">Cancel</a></form></div>{% endblock %}

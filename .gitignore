@@ -1,0 +1,47 @@
+# Python bytecode and test/build output
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local databases and credentials
+db.sqlite3
+*.sqlite3
+*.sqlite3-journal
+.env
+.env.*
+!.env.example
+
+# IDE and operating system files
+.vscode/
+.idea/
+*.code-workspace
+.project
+.pydevproject
+*.sublime-*
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs and generated browser test setup
+*.log
+browser_test.sqlite3
+browser_test_settings.py
+browser_test_setup.py
+browser_e2e_temp.py
+browser_results.json
