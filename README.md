@@ -19,7 +19,8 @@ AcxiomCRM is a Django-based customer relationship management application for man
 - Python 3.11+
 - Django 5.2
 - Django REST Framework
-- SQLite for local development
+- SQLite for local development and PostgreSQL in production
+- Gunicorn, WhiteNoise, and psycopg for Render deployment
 - Bootstrap 5, CSS, JavaScript, and Chart.js
 
 ## Installation
@@ -50,6 +51,8 @@ python manage.py runserver
 ```
 
 Open <http://127.0.0.1:8000/>. The first superuser has Admin access. Use **Users** in the CRM to create accounts and assign the **Admin**, **Manager**, or **Sales Executive** role. Role groups are created automatically after migrations. Existing superusers retain Admin access.
+
+For local development, keep `DATABASE_URL` empty to use SQLite. In production, configure a PostgreSQL `DATABASE_URL` and `DJANGO_DEBUG=False`.
 
 The existing database is `db.sqlite3`. The customer assignment migration adds a nullable field, preserving existing customer records. Back up the database before applying future migrations.
 
@@ -91,6 +94,30 @@ acxiomcrm_django/
 
 ## Deployment notes
 
-Before deployment, set a private `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`, and a production `DJANGO_ALLOWED_HOSTS` list through the hosting environment. Do not deploy `.env`, `db.sqlite3`, or development credentials. Configure HTTPS, secure cookies, a production database, database backups, static file hosting, logging, and an appropriate WSGI/ASGI server. Run `python manage.py migrate` and `python manage.py collectstatic` as part of deployment.
+### Deploy to Render with PostgreSQL
+
+1. Sign in to [Render](https://render.com/) and choose **Continue with GitHub**. Authorize Render to access the `Surendra112005/AcxiomCRM` repository.
+2. In the Render dashboard, create a **PostgreSQL** database. Choose a region and plan, then copy its **Internal Database URL** from the database page. Keep that URL private.
+3. Create a **Web Service**, connect `https://github.com/Surendra112005/AcxiomCRM`, and select the `main` branch and Python runtime. Set the service root directory to `acxiomcrm_django` only if the repository is later changed to a monorepo; in the current repository the Django project files are at its root, so leave it blank.
+4. Set the build command to `bash build.sh` and the start command to `gunicorn acxiomcrm.wsgi:application`.
+5. Add these web service environment variables:
+
+   | Key | Value |
+   | --- | --- |
+   | `DJANGO_SECRET_KEY` | Generate a new private value in Render. Do not reuse the local `.env` key. |
+   | `DJANGO_DEBUG` | `False` |
+   | `DJANGO_ALLOWED_HOSTS` | The Render hostname, for example `acxiomcrm.onrender.com` (without `https://`). |
+   | `DJANGO_CSRF_TRUSTED_ORIGINS` | The Render origin, for example `https://acxiomcrm.onrender.com`. |
+   | `DATABASE_URL` | The PostgreSQL database's **Internal Database URL**. |
+
+   `RENDER_EXTERNAL_HOSTNAME`, when provided by Render, is also added automatically to allowed hosts and CSRF origins. Keep the Render database and web service in the same region so the internal URL can be used.
+6. Create the service and wait for the build and deploy to finish. The build installs requirements, runs Django system checks, collects static files, and applies pending migrations. It does not create an admin account automatically.
+7. In the web service's **Shell**, run `python manage.py createsuperuser` and follow the prompts. Then open the service's `https://<service-name>.onrender.com` URL and sign in at `/admin/` or the CRM login page.
+
+For a custom domain, add its hostname to `DJANGO_ALLOWED_HOSTS` and its `https://` origin to `DJANGO_CSRF_TRUSTED_ORIGINS`. Render terminates HTTPS and forwards the original scheme; Django redirects HTTP to HTTPS and enables secure cookies and HSTS when `DJANGO_DEBUG=False`.
+
+To confirm PostgreSQL persistence, create a harmless test record, restart or redeploy the web service, and confirm that the record remains. The database is a separate Render service; do not use SQLite on an ephemeral web-service filesystem for production data. Back up the PostgreSQL database before schema or data maintenance.
+
+The local `db.sqlite3` remains excluded and is not copied or migrated by deployment. Existing migrations are applied normally with `manage.py migrate`; no database reset or destructive migration command is used.
 
 Bootstrap and Chart.js are currently loaded from public CDNs; production deployments should account for those external dependencies or serve the assets locally.
